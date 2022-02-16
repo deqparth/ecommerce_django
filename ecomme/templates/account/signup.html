@@ -1,0 +1,50 @@
+{% extends "account/base.html" %}
+
+{% load i18n %}
+
+{% block head_title %}{% trans "Signup" %}{% endblock %}
+
+{% block content %}
+
+<div class="container d-flex flex-column justify-content-between vh-100">
+  <div class="row justify-content-center mt-5">
+    <div class="col-xl-5 col-lg-6 col-md-10">
+      <div class="card">
+        <div class="card-header bg-primary">
+          <div class="app-brand">
+            <a href="/index.html">
+              <svg class="brand-icon" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid" width="30" height="33"
+                viewBox="0 0 30 33">
+                <g fill="none" fill-rule="evenodd">
+                  <path class="logo-fill-blue" fill="#7DBCFF" d="M0 4v25l8 4V0zM22 4v25l8 4V0z" />
+                  <path class="logo-fill-white" fill="#FFF" d="M11 4v25l8 4V0z" />
+                </g>
+              </svg>
+              <span class="brand-name">Login</span>
+            </a>
+          </div>
+        </div>
+        <div class="card-body p-5">
+
+            <h1>{% trans "Sign Up" %}</h1>
+
+
+
+            <p>{% blocktrans %}Already have an account? Then please <a href="{{ login_url }}">sign in</a>.{% endblocktrans %}</p>
+
+            <form class="signup" id="signup_form" method="post" action="{% url 'account_signup' %}">
+              {% csrf_token %}
+              {{ form.as_p }}
+              {% if redirect_field_value %}
+              <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+              {% endif %} 
+              <button class="btn btn-primary"type="submit">{% trans "Sign Up" %} &raquo;</button>
+            </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}
