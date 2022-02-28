@@ -1,0 +1,48 @@
+{% extends "customer/customerblankbody.html" %}
+{% load myfilters %}
+{% block content %}
+
+<div class="container">
+   
+    <div class="main-body">
+        
+        <div class="row">
+            
+            <form class="login" method="POST" >
+                {% csrf_token %}
+                {{form}}
+                
+            <div class="col-lg-8">
+                
+                <div class="card">
+                   
+                    <div class="card-body">
+                       
+                        <div class="row mb-3">
+                        
+                        
+                            <br><br><br><br>
+                           <br>
+                        <div class="row">
+                            
+                            <div class="col-sm-3"></div>
+                            <div class="col-sm-9 text-secondary">
+                                <input type="submit" class="btn btn-primary px-4" value="Update">
+                            </div>
+                            </div>
+                            </div></form>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="card">
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

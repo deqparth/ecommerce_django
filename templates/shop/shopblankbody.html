@@ -1,0 +1,9 @@
+{% extends 'baseblankbody.html' %}
+{% block profilelink %}
+<a href="/shopprofile/{{user.id}}">
+  <i class="mdi mdi-account"></i> My Profile
+</a>
+{% endblock %}
+{% block content %}
+  <p>shop content here</p>
+{% endblock %}
