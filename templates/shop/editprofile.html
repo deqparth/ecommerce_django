@@ -1,47 +1,37 @@
 {% extends "shop/shopblankbody.html" %}
 {% load myfilters %}
 {% block content %}
+<div class="container py-5">
 
-<div class="container">
-    
-    <div class="main-body">
-        
-        <div class="row">
-            
-            <form  method="POST" >
-                {% csrf_token %}
-                
-            <div class="col-lg-8">
-                
-                <div class="card">
-                   
-                    <div class="card-body">
-                       
-                        <div class="row mb-3">
-                        
-                            {{form}}
-                            <br><br><br><br>
-                           <br>
-                        <div class="row">
-                            
-                            <div class="col-sm-3"></div>
-                            <div class="col-sm-9 text-secondary">
-                                <input type="submit" class="btn btn-primary px-4" value="Update">
-                            </div>
-                            </div>
-                            </div></form>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-12">
-                        <div class="card">
-                            
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <div class="row mb-4">
+        <div class="col-lg-8 mx-auto text-center">
+            <h1 class="display-6">Update Details</h1>
         </div>
-    </div>
-</div>
+    </div> 
+        <div class="col-lg-6 mx-auto">
+            <div class="card ">
+                <div class="card-header">
+                
+                    <div class="tab-content">
+                       
+                        
+                        <div id="credit-card" class="tab-pane fade show active pt-3">
+                            <form method="POST">
+                                {% csrf_token %}
+                
+                                {{form.as_ul}}
+                                
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-8">
+                                       
+                                    </div>
+                                   
+                                </div>
+                                <div class="card-footer"> <button type="submit" class="subscribe btn btn-primary btn-block shadow-sm"> Update </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+ 
 {% endblock %}

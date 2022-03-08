@@ -20,7 +20,7 @@
   <link href="assets/plugins/ladda/ladda.min.css" rel="stylesheet" />
   <link href="assets/plugins/select2/css/select2.min.css" rel="stylesheet" />
   <link href="assets/plugins/daterangepicker/daterangepicker.css" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.11.4/css/jquery.dataTables.min.css">
+
 
   <!-- SLEEK CSS -->
   <link id="sleek-css" rel="stylesheet" href="{% static 'assets/css/sleek.css' %}"   />
@@ -29,7 +29,8 @@
 
   <!-- FAVICON -->
   <link href="assets/img/favicon.png" rel="shortcut icon" />
-
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.11.4/css/jquery.dataTables.min.css">
+  <link rel="stylesheet" href="https//cdn.datatables.net/1.11.4/css/jquery.dataTables.min.css">
   <script src="assets/plugins/nprogress/nprogress.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
@@ -701,6 +702,8 @@
                         <div class="d-inline-block">
                           {{user.full_name}} <small class="pt-1">{{user.email}}</small>
                         </div>
+                        <br>
+                        {{user.role}}   
                       </li>
 
                       <li>
@@ -709,20 +712,34 @@
                         {% endblock %}
                       </li>
                       <li>
-                        <a href="email-inbox.html">
-                          <i class="mdi mdi-email"></i> Message
-                        </a>
+                        {% block allproducts %}
+                        
+                        {% endblock %}
+                      </li>
+                      <li>
+                        {% block mywishlist %}
+                        
+                        {% endblock %}
+                      </li>
+                      <li>
+                        {% block mycart %}
+                        
+                        {% endblock %}
+                      </li>
+                      <li>
+                        {% block myorders %}
+                        {% endblock %}
                       </li>
                       {% block requests %}
                       {% endblock %}
                       {% block users_list %}
                       {% endblock %}
-                      <li>
-                        <a href="#"> <i class="mdi mdi-settings"></i> Account Setting </a>
+                      
+                        
                       </li>
-                      <li>
-                        <a href="#"> <i class="mdi mdi-settings"></i> {{user.role}} </a>
-                      </li>
+                      {% block addshop %}
+                      {% endblock %}
+                      
 
                       <li class="dropdown-footer">
                         <a href="/accounts/logout"> <i class="mdi mdi-logout"></i> Log Out </a>
@@ -741,18 +758,7 @@
 {% endblock %}
 						
 
-                  <footer class="footer mt-auto">
-            <div class="copyright bg-white">
-              <p>
-                &copy; <span id="copy-year">2019</span> Copyright Sleek Dashboard Bootstrap Template by
-                <a
-                  class="text-primary"
-                  href="http://www.iamabdus.com/"
-                  target="_blank"
-                  >Abdus</a
-                >.
-              </p>
-            </div>
+           
             <script>
                 var d = new Date();
                 var year = d.getFullYear();
@@ -784,13 +790,14 @@
 <script src="{% static 'assets/js/date-range.js' %}"></script>
 <script src="{% static 'assets/js/map.js' %}"></script>
 <script src="{% static 'assets/js/custom.js' %}"></script>
-<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script> -->
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
 <script src='https://code.jquery.com/jquery-3.2.1.min.js'></script>
 <script src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js'></script>
-<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script> -->
-<script src="https://cdn.datatables.net/1.11.4/js/jquery.dataTables.min.js" ></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>  -->
+<script src="https://cdn.datatables.net/1.11.4/js/jquery.dataTables.min.js" ></script> 
+<script src="https://cdn.datatables.net/1.11.4/js/jquery.dataTables.min.js"></script>
+<!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script> -->
 
 
 <script>
@@ -801,6 +808,6 @@
 
 </script>
 {% block javascript %}
-  {% endblock javascript%}
+  {% endblock javascript %}
   </body>
 </html>

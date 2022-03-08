@@ -7,3 +7,18 @@
 {% block content %}
   <p>customer content here</p>
 {% endblock %}
+{% block mywishlist %}
+<a href="/mywishlist/{{user.id}}">
+    <i class="mdi mdi-account"></i> My Wishlist
+  </a>
+{% endblock %}
+{% block mycart %}
+<a href="/mycart/{{user.id}}">
+    <i class="mdi mdi-account"></i> My Cart
+  </a>
+{% endblock %}
+{% block myorders %}
+<a href="/myorders/{{user.id}}">
+  <i class="mdi mdi-account"></i> My Orders
+</a>
+{% endblock %}

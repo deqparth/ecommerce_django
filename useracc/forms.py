@@ -26,22 +26,24 @@ class CustomerSignupForm(SignupForm):
     date_of_birth = forms.DateField(
         label='date_of_birth', widget=forms.SelectDateWidget,)
     gender = forms.ChoiceField(choices=genderchoices)
+    role = 'customer'
 
     class Meta:
-        """meta attributes for this class"""
         model = User
 
-    def save(self, request):
-        user = User()
-        user.role = "customer"
-        user.email = self.cleaned_data['email']
-        user.set_password(user.password)
-        user.full_name = self.cleaned_data['full_name']
-        user.address = self.cleaned_data['address']
-        user.gender = self.cleaned_data['gender']
-        user.date_of_birth = self.cleaned_data['date_of_birth']
-        user.save()
-        return user
+    # def save(self, request):
+    #     user = User()
+    #     user.role = "customer"
+    #     user.email = self.cleaned_data['email']
+    #     # user.set_password(user.password)
+    #     user.full_name = self.cleaned_data['full_name']
+    #     user.address = self.cleaned_data['address']
+    #     user.gender = self.cleaned_data['gender']
+    #     user.date_of_birth = self.cleaned_data['date_of_birth']
+    #     user.save()
+    #     return user
+
+    # Disabled the .save() function because of inherited method SignupForm
 
 
 class ShopSignupForm(SignupForm):
@@ -55,7 +57,7 @@ class ShopSignupForm(SignupForm):
     full_name = forms.CharField(max_length=50)
     address = forms.CharField(max_length=100)
     date_of_birth = forms.DateField(
-        label='date_of_birth', widget=forms.SelectDateWidget,)
+        label='date_of_birth', widget=forms.SelectDateWidget)
     gender = forms.ChoiceField(choices=genderchoices)
     shopname = forms.CharField(max_length=50)
     shopaddress = forms.CharField(max_length=200)
@@ -112,9 +114,23 @@ class RequestResponseForm(forms.Form):
     response = forms.ChoiceField(choices=choices)
 
 
-class AddShop(forms.Form):
-    categories = (("electronics", "electronics"), ("footwear",
-                  "footwear"), ("accesories", "accesories"))
+# class AddShop(forms.Form):
+#     name = forms.CharField()
+#     price = forms.IntegerField()
+#     categories = (("electronics", "electronics"), ("footwear",
+#                   "footwear"), ("accesories", "accesories"))
+#     category = forms.ChoiceField(choices=categories)
+#     description = forms.CharField()
+#     image = forms.ImageField()
+#     brand = forms.CharField()
+#     quantity = forms.IntegerField()
+
+
+class AddProduct(forms.Form):
+    categories = (
+        ("electronics", "electronics"), ("footwear", "footwear"),
+        ("accesories", "accesories")
+    )
     name = forms.CharField()
     price = forms.IntegerField()
     category = forms.ChoiceField(choices=categories)

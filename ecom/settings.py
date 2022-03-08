@@ -49,6 +49,9 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'useracc',
+    'dajaxice',
+    'dajax',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -148,6 +151,7 @@ DAJAXICE_MEDIA_PREFIX = 'dajaxice'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 SITE_ID = 1
+SOCIALACCOUNT_PROVIDERS = {}
 
 AUTHENTICATION_BACKENDS = [
 
@@ -197,3 +201,7 @@ ACCOUNT_FORMS = {
     'login': 'useracc.forms.UserLoginForm',
 }
 REGISTRATION_FORM = 'useracc.forms.CustomForm'
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = '/media/'
+DAJAXICE_MEDIA_PREFIX = 'dajaxice'

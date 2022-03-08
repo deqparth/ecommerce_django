@@ -1,46 +1,46 @@
-  {% extends 'baseblankbody.html' %}
-  {% block content %}
-  						<div class="row">
-								<div class="col-lg-6">
-									<div class="card card-default">
-										<div class="card-header card-header-border-bottom">
-											<h2>All requests</h2>
-										</div>
-										<div class="card-body">
-											<p class="mb-5">Documentation and examples for opt-in styling of tables (given their prevalent use in JavaScript plugins) with Bootstrap <a href="http://getbootstrap.com/docs/4.1/content/tables/"
-												 target="_blank"> more details.</a></p>
-											<table class="table">
-												<thead>
-													<tr>
-														<th scope="col">ID</th>
-														<th scope="col">Full Name</th>
-														<th scope="col">Address</th>
-														<th scope="col">email</th>
-                            <th scopre="col" >Response</th>
-													</tr>
-												</thead>
-												<tbody>
-                          {% for element in lst %}
-													<tr>
-														<td scope="row">{{ element.id }}</td>
-														<td>{{ element.full_name }}</td>
-														<td>{{ element.address }}</td>
-														<td>{{ element.email }}</td>
-                            <td><a href= "approval/{{element.id}}" >details</a></td>
-                            
-													</tr>
-                          {% endfor %}
-													
-												</tbody>
-											</table>
-										</div>
-									</div>
-								</div>
-								
-          
+{% extends 'adminblankbody.html' %}
+{% block content %}
+						<div class="row">
+							  <div class="col-lg-6">
+								  <div class="card card-default">
+									  <div class="card-header card-header-border-bottom">
+										  <h2>All requests</h2>
+									  </div>
+									  <div class="card-body">
+										  <p class="mb-5">Documentation and examples for opt-in styling of tables (given their prevalent use in JavaScript plugins) with Bootstrap <a href="http://getbootstrap.com/docs/4.1/content/tables/"
+											   target="_blank"> more details.</a></p>
+										  <table class="table">
+											  <thead>
+												  <tr>
+													  <th scope="col">ID</th>
+													  <th scope="col">Full Name</th>
+													  <th scope="col">Address</th>
+													  <th scope="col">email</th>
+						  <th scopre="col" >Response</th>
+												  </tr>
+											  </thead>
+											  <tbody>
+						{% for element in lst %}
+												  <tr>
+													  <td scope="row">{{ element.id }}</td>
+													  <td>{{ element.full_name }}</td>
+													  <td>{{ element.address }}</td>
+													  <td>{{ element.email }}</td>
+						  <td><a href= "approval/{{element.id}}" >details</a></td>
+						  
+												  </tr>
+						{% endfor %}
+												  
+											  </tbody>
+										  </table>
+									  </div>
+								  </div>
+							  </div>
+							  
+		
 
 
-        </div>
+	  </div>
 
-                
+			  
 {% endblock %}

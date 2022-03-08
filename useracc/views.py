@@ -3,6 +3,7 @@ import json
 from django.views import View
 from django.http import JsonResponse
 from django.http import HttpResponse
+from django.core.paginator import Paginator
 from django.shortcuts import redirect, render
 from django.views.generic.list import ListView
 from django.views.generic.edit import FormView
@@ -12,8 +13,12 @@ from django.views.generic.base import TemplateView
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 
-from .models import User, Product
-from .forms import RequestResponseForm, ShopSignupForm, AddUserForm, AdminUserUpdateForm, AddShop
+from .models import User, Product, Wishlist, CartItems, Cart
+from .forms import AddProduct, RequestResponseForm, ShopSignupForm, AddUserForm, AdminUserUpdateForm
+
+from urllib import request
+
+from .filters import ProductFilter
 
 
 class IndexView(ListView):
@@ -23,15 +28,37 @@ class IndexView(ListView):
     @method_decorator([login_required])
     def get(self, request):
         if request.user.role == "customer":
-            print("person is customer")
             productlist = Product.objects.all()
-            return render(request, self.template_name, {'productlist': productlist})
+            if request.GET.get('search') is not None:
+                keyword = request.GET.get('search')
+                productlist = productlist.filter(
+                    Q(name__icontains=keyword) | Q(
+                        description__icontains=keyword)
+                )
+
+            if request.GET.get('sortby') == "plth":
+                productlist = productlist.order_by('price')
+            elif request.GET.get('sortby') == "phtl":
+                productlist = productlist.order_by('-price')
+            elif request.GET.get('sortby') == "rlth":
+                productlist = productlist.order_by('rating')
+            else:
+                productlist = productlist.order_by('-rating')
+
+            productfilter = ProductFilter(request.GET, queryset=productlist)
+            productlist = productfilter.qs
+            paginator = Paginator(productlist, 2)
+            page_number = request.GET.get('page')
+            page_obj = paginator.get_page(page_number)
+            return render(
+                request, self.template_name,
+                {'productlist': page_obj, 'productFilter': productfilter}
+            )
 
         elif request.user.role == "shopowner":
             return render(request, 'shop/shopindex.html')
 
-        else:
-            return render(request, 'adminindex.html')
+        return render(request, 'adminindex.html')
 
 
 class CustomerLandingView(ListView):
@@ -51,6 +78,7 @@ class ApprovalView(View):
     form_class = RequestResponseForm
     template_name = 'requestresponse.html'
 
+    @method_decorator([login_required])
     def get(self, request, *args, **kwargs):
         # gets called if the request methods is get
         user_id = self.kwargs['id']
@@ -105,13 +133,11 @@ class RequestsView(ListView):
 
 
 class ShopSignupFormView(FormView):
-    """Renders and handles form for registration of shop"""
     form_class = ShopSignupForm
     template_name = "account/shopsignup.html"
     success_url = "/accounts/login"
 
     def form_valid(self, form):
-        """verify if the form data is valid and fetch attributes"""
         user = User()
         user.email = form.cleaned_data['email']
         user.password = form.cleaned_data['password2']
@@ -134,7 +160,6 @@ class AddUserFormView(FormView):
     success_url = "/"
 
     def form_valid(self, form):
-        """verify if the form data is valid and fetch attributes"""
         print(form.cleaned_data)
         user = User()
         user.email = form.cleaned_data['email']
@@ -153,7 +178,6 @@ class AddUserFormView(FormView):
 
 
 class UserUpdateView(UpdateView):
-    """Renders and updates customer details"""
     model = User
     template_name = 'customer/editprofile.html'
     fields = [
@@ -225,7 +249,6 @@ class ShopUpdateView(UpdateView):
 
 
 class ShopUpdateView(UpdateView):
-    """Renders and updates shop details"""
     model = User
     template_name = 'shop/editprofile.html'
     fields = [
@@ -240,27 +263,27 @@ class ShopUpdateView(UpdateView):
     success_url = "/"
 
 
-class AddShopFormView(FormView):
-    template_name = 'shop/addshop.html'
-    form_class = AddShop
-    success_url = '/thanks/'
+# class AddShopFormView(FormView):
+#     template_name = 'shop/addshop.html'
+#     form_class = AddShop
+#     success_url = '/thanks/'
 
-    def form_valid(self, form):
-        id = self.request.user.id
-        user = User.objects.get(id=id)
-        product = Product()
-        product.name = form.cleaned_data['name']
-        product.price = form.cleaned_data['price']
-        product.description = form.cleaned_data['description']
-        product.image = form.cleaned_data['image']
-        product.brand = form.cleaned_data['brand']
-        product.category = form.cleaned_data['category']
-        product.provider = user
-        product.quantity = form.cleaned_data['quantity']
+#     def form_valid(self, form):
+#         id = self.request.user.id
+#         user = User.objects.get(id=id)
+#         product = Product()
+#         product.name = form.cleaned_data['name']
+#         product.price = form.cleaned_data['price']
+#         product.description = form.cleaned_data['description']
+#         product.image = form.cleaned_data['image']
+#         product.brand = form.cleaned_data['brand']
+#         product.category = form.cleaned_data['category']
+#         product.provider = user
+#         product.quantity = form.cleaned_data['quantity']
 
-        product.save()
-        print("saved")
-        return redirect('/')
+#         product.save()
+#         print("saved")
+#         return redirect('/')
 
 
 class ProductUpdateView(View):
@@ -319,7 +342,6 @@ class ProductDeleteView(View):
 
 
 class ProductListView(ListView):
-    """admin gets a list of user"""
     template_name = 'shop/productlist.html'
     model = Product
 
@@ -334,3 +356,179 @@ class ProductListView(ListView):
 class ProductDetailView(DetailView):
     model = Product
     template_name = 'customer/productdetail.html'
+
+
+class AddProductFormView(FormView):
+    template_name = 'shop/addproduct.html'
+    form_class = AddProduct
+    success_url = '/thanks/'
+
+    def form_valid(self, form):
+        if self.request.user.role != "shopowner":
+            return redirect("/accounts/logout")
+        id = self.request.user.id
+        user = User.objects.get(id=id)
+        product = Product()
+        product.name = form.cleaned_data['name']
+        product.price = form.cleaned_data['price']
+        product.description = form.cleaned_data['description']
+        product.image = form.cleaned_data['image']
+        product.brand = form.cleaned_data['brand']
+        product.category = form.cleaned_data['category']
+        product.provider = user
+        product.quantity = form.cleaned_data['quantity']
+        product.save()
+        return redirect('/')
+
+
+class ProductUpdateView(View):
+    model = Product
+
+    def get(self, request, *args, **kwargs):
+        if request.user.role != "shopowner":
+            return redirect("/accounts/logout")
+        print("product update  clalled")
+        user_id = self.kwargs['pk']
+        request_for = Product.objects.get(id=user_id)
+        responseData = {
+            'id': request_for.id,
+            'name': request_for.name,
+            'price': request_for.price,
+            'category': request_for.category,
+            'brand': request_for.brand,
+            'description': request_for.description,
+            'quantity': request_for.quantity,
+            'image': json.dumps(str(request_for.image)),
+            'color': request_for.color,
+            'material': request_for.material
+        }
+        return JsonResponse(responseData)
+
+    def post(self, request, *args, **kwargs):
+        if request.user.role != "shopowner":
+            return redirect("/accounts/logout")
+        data = request.POST
+        print(request.FILES['image'])
+        name = data['name']
+        id = data['id']
+        category = data['category']
+        quantity = data['quantity']
+        color = data['color']
+        material = data['material']
+        brand = data['brand']
+        description = data['description']
+        product = Product.objects.get(id=id)
+        product.category = category
+        product.name = name
+        product.quantity = quantity
+        product.image = request.FILES['image']
+        product.color = color
+        product.material = material
+        product.brand = brand
+        product.description = description
+        product.save()
+        return redirect("/listproducts/")
+
+
+class BuyProductView(View):
+    def get(self, request):
+        if request.user.role != "customer":
+            return redirect("/accounts/logout")
+
+        return HttpResponse("bought")
+
+
+class AddToWishlistView(View):
+    def get(self, request):
+        if request.user.role != "customer":
+            return redirect("/accounts/logout")
+        product_id = self.kwargs['pk']
+        user_id = request.user.id
+        product = Product.objects.get(id=product_id)
+        user = User.objects.get(id=user_id)
+        if hasattr(user, 'wishlist'):
+            wishl = user.wishlist
+            wishl.items.add(product)
+        else:
+            wishl = Wishlist(user=user)
+            wishl.save()
+            wishl.items.add(product)
+        wishl.save()
+        return redirect('/')
+
+
+class WishListView(View):
+    def get(self, request):
+        if request.user.role != "customer":
+            return redirect("/accounts/logout")
+        user_id = request.user.id
+        user = User.objects.get(id=user_id)
+        wishl = user.wishlist
+        object_list = wishl.items.all()
+        print(user)
+        return render(request, 'customer/mywishlist.html', {'object_list': object_list})
+
+
+class DeleteFromWishListView(View):
+    def post(self, request,):
+        if request.user.role != "customer":
+            return redirect("/accounts/logout")
+        data = json.loads(request.POST.get('data', ''))
+        product_id = data['obj']['id']
+        product = Product.objects.get(id=product_id)
+        user = User.objects.get(id=request.user.id)
+        wishl = user.wishlist
+        wishl.items.remove(product)
+        return redirect('/mywishlist/' + str(request.user.id))
+
+
+class AddToCartView(View):
+    def get(self, request, **kwargs):
+        if request.user.role != "customer":
+            return redirect("/accounts/logout")
+        product = Product.objects.get(id=kwargs['pk'])
+        user = User.objects.get(id=request.user.id)
+
+        if hasattr(user, 'cart'):
+            cart = user.cart
+            content_list = cart.cartitems_set.all()
+            found = False
+            for entry in content_list:
+                if entry.product == product:
+                    entry.quantity += 1
+                    entry.save()
+                    found = True
+                    break
+            if not found:
+                entry = CartItems(product=product, quantity=1, cart=cart)
+                entry.save()
+
+        else:
+            cart = Cart(user=user)
+            cart.save()
+            cartitems = CartItems(product, 1, cart)
+            cartitems.save()
+        return redirect('/mycart/' + str(user.id))
+
+
+class CartView(ListView):
+    template_name = "customer/mycart.html"
+
+    def get_queryset(self):
+        if request.user.role != "customer":
+            return redirect("/accounts/logout")
+        # print(self.request.user)
+        user = self.request.user
+        object_list = user.cart.cartitems_set.all()
+        return object_list
+
+
+class DeleteFromCartView(View):
+    def post(self, request):
+        if request.user.role != "customer":
+            return redirect("/accounts/logout")
+        data = json.loads(request.POST.get('data', ''))
+        entry_id = data['obj']['id']
+        entry = CartItems.objects.get(id=entry_id)
+        entry.delete()
+        return redirect('/mycart/' + str(request.user.id))

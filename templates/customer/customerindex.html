@@ -1,4 +1,64 @@
+
 {% extends 'customer/customerblankbody.html'  %}
 {% block content %}
-<p>loop over products</p>
+<form method = "get" width="150 %">
+    {{ productFilter.form }}
+    <button type = "submit" >Submit</button>
+    </form>
+
+    <form action="/" method = "GET">
+        <label for="lang">Sort By</label>
+        <select name="sortby" id="lang">
+          <option value="plth">Price Low to high</option>
+          <option value="phtl">Price High to low</option>
+          <option value="rlth">Rating low to high</option>
+          <option value="rhtl">Rating High to low</option>
+          
+        </select>
+        <input type="text" placeholder = "search" , name = "search">
+        <input type="submit" value="Submit" />
+  </form>
+{% for product in productlist %}
+<div class="card card-default">
+ 
+    <div class="card-header card-header-border-bottom">
+       
+    </div>
+    <div class="card-body">
+        <div class="row">
+            
+            <div class="col-md-6 col-xl-3">
+                <div class="card mb-4">
+                
+                    <img class="card-img-top" src="{{product.image.url}}">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary">{{product.name}}</h5>
+                        <p class="card-text pb-3">{{product.description}}</p>
+                        <p class="card-text pb-3">{{product.price}}</p>
+                        <a href="productdetail/{{product.id}}" class="btn btn-outline-primary">Details</a>
+                        <a href="#" class="btn btn-outline-primary">Buy</a>
+                    </div>
+                </div>
+                
+            </div>
+            
+    </div>
+    {% endfor %}
+    <span class="current">
+        Page {{ productlist.number }} of {{ productlist.paginator.num_pages }}.
+    </span>
+    <br>
+    {% if productlist.has_previous %}
+    <a href="?page={{ productlist.previous_page_number }}">Previous</a>
+    {% endif %}    
+    <br>    
+   
+    {% if productlist.has_next %}
+    <a href="?page={{ productlist.next_page_number }}">next</a>
+    <br>
+    <a href="?page={{ productlist.paginator.num_pages }}">last &raquo;</a>
+{% endif %}
+</div>
+
+
 {% endblock %}

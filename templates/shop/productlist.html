@@ -1,0 +1,287 @@
+{% extends 'shop/shopblankbody.html' %}
+{% block content %}
+
+
+<table id = "myTable" width = "100%" > 
+    <br>  
+<a href ="/addproduct" > <button class= "mb-1 btn  disabled btn-success" > Add Product</button></a>
+<br>
+    <thead>
+        
+        <th>ID</th>
+        <th>Name</th>
+        <th>Price</th>
+        <th>Brand</th>
+        <th>Description</th>
+        <th>Company</th>
+        <th>colour</th>
+        <th>Material</th>
+        <th>Category</th>
+        
+        
+
+    </thead>
+    
+    <tbody  id = "myTbody">
+        {% for obj in object_list %}
+        <tr>
+            <td>{{ obj.id }}</td>
+            <td>{{ obj.name }}</td>
+            <td>{{ obj.price }}</td>
+            <td>{{ obj.brand }}</td>
+            <td>{{ obj.description }}</td>
+            <td>{{ obj.provider.shopname }}</td>
+            <td>{{ obj.color }}</td>
+            <td>{{ obj.material }}</td>
+            <td>{{ obj.category }}</td>
+            &nbsp;
+            <td><button type="button" class="btn btn-primary" onClick="get_data('{{ obj.id }}')" data-toggle="modal" data-target="#exampleModalLong">
+                    Update
+                  </button></td>
+             <td><button type="button" class="btn btn-primary" data-toggle="modal" onclick ="delete_data('{{ obj.id }}')" data-target="#exampleModalCenter">
+                Delete
+              </button></td>
+            
+            
+        </tr>
+        {% endfor %}
+        
+        
+    </tbody>
+    
+</table>
+<div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLongTitle">Are you sure you want to delete this Product?</h5>
+          <input type="hidden" id ="second_form_id" placeholder="Enter Email" name="email" required>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+       
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">No </button>
+          <button type="button"  onclick="confirm_delete()" class="btn btn-primary">Confirm delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<div class="modal fade" id="exampleModalLong" tabindex="-1" role="dialog" aria-labelledby="exampleModalLongTitle" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLongTitle">Update Product</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="myForm" class="form-container">
+              {% csrf_token %}
+          
+      
+          <label for="email"><b>Name</b></label>
+          <input type="Text" id = "form_name" placeholder="Enter Email" name="name" required>
+          <br>
+          
+          <input type="hidden" id ="form_id" placeholder="Enter Email" name="id" required>
+          <br>
+          <label for="psw"><b>Prisddce</b></label>
+          <input type="text"  id="form_price" placeholder="Enter Price" name="price" required>
+          <br>
+          <label for="psw"><b>Brand</b></label>
+          <input type="text" id="form_brand" placeholder="Enter Password" name="brand" required>
+          <br>
+          <label for="psw"><b>color</b></label>
+          <input type="text"  id = form_color placeholder="Enter Password" name="color" required>
+          <br>
+          <label for="psw"><b>category</b></label>
+          <input type="text"  id = form_category placeholder="Enter Password" name="category" required>
+          <br><label for="psw"><b>description</b></label>
+          <input type="text"  id = form_description placeholder="Enter Password" name="description" required>
+          <br>
+          <label for="psw"><b>image</b></label>
+          <input type="file"  id = "form_image" placeholder="Enter Password" name="image" required>
+          <br><label for="psw"><b>material</b></label>
+          <input type="text"  id = form_material placeholder="Enter Password" name="material" required>
+          <br>
+          <label for="psw"><b>quantity</b></label>
+          <input type="text"  id = form_quantity placeholder="Enter Password" name="quantity" required>
+          <br>
+          
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <input type="submit" class="btn btn-primary" >
+          
+          </div>
+      </form>
+        
+        </div>
+       
+      </div>
+    </div>
+  </div>
+
+<script>
+
+    $('#myForm').submit(function(e){
+        e.preventDefault();
+        console.log("submit called");
+        $form = $(this)
+        var formData = new FormData(this);
+        var icon = document.getElementById("form_image").files[0];
+        console.log(icon)
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        formData.append('image' , icon);
+        var x = document.getElementById('form_id').value;
+        $.ajax({
+            url: `/productupdate/${x}`,
+            type: 'POST',
+            data: formData , 
+            success: function (response) {
+                $('.error').remove();
+                console.log(response)
+                if(response.error){
+                    $.each(response.errors, function(name, error){
+                        error = '<small class="text-muted error">' + error + '</small>'
+                        $form.find('[name=' + name + ']').after(error);
+                    })
+                }
+                else{
+                    
+                    window.location = ""
+                }
+            },
+            cache: false,
+            contentType: false,
+            processData: false
+        });
+    });
+
+    console.log("running");
+    // document.getElementById("myForm").style.display = "None";
+    // document.getElementById("mysecondForm").style.display = "None";
+    function get_data(e){
+        document.getElementById("myForm").style.display = "block";
+        //document.getElementById("myTbody").style.display = "None";
+        
+        console.log(e)
+        $.ajax({
+            type: 'GET',
+            url: `/productupdate/${e}`,
+            data: {"id": e},
+            success: function (response) {
+                // if not valid user, alert the user
+                console.log("reached");
+                console.log(response)
+                document.getElementById("form_name").value = response.name;
+                document.getElementById("form_price").value = response.price;
+                document.getElementById("form_color").value = response.color;
+                document.getElementById("form_id").value = response.id;
+                document.getElementById("form_category").value = response.category;
+                document.getElementById("form_description").value = response.description;
+                document.getElementById("form_brand").value = response.brand;
+                //document.getElementById("form_image").value = response.image;
+                document.getElementById("form_quantity").value = response.quantity;
+                document.getElementById("form_material").value = response.material;
+                
+
+                
+                
+            },
+            error: function (response) {
+                console.log(response)
+            }
+        })
+    }
+    function closeForm(e){
+        document.getElementById("myForm").style.display = "None";
+        document.getElementById("myTbody").style.display = "inherit";
+        //console.log(e)
+        
+    }
+    function closesecondForm(e){
+        document.getElementById("mysecondForm").style.display = "None";
+        document.getElementById("myTbody").style.display = "inherit";
+        //console.log(e)
+        
+    }
+    function update(e){
+        
+        console.log(e)
+        formis = document.getElementById("myForm")
+        console.log(e)
+        updated_data = {
+        'name' : document.getElementById("form_name").value ,
+        'price': document.getElementById("form_price").value ,
+        'category' : document.getElementById("form_category").value ,
+        'brand' : document.getElementById("form_brand").value,
+        'id' : document.getElementById("form_id").value,
+        'description' : document.getElementById("form_description").value,
+        'brand': document.getElementById("forn_brand").value,
+        'quantity': document.getElementById("form_quantity").value,
+
+
+        'data': {
+            'content': 'xxx',
+            'csrfmiddlewaretoken': '{{ csrf_token }}',
+        },
+    }
+    $.ajax({
+            type: 'POST',
+            url: '/userupdatebyadmin/',
+            data: {'data': JSON.stringify({'obj': updated_data}) , 'csrfmiddlewaretoken': '{{ csrf_token }}'},
+            success: function (response) {
+                // if not valid user, alert the user
+                console.log(response)
+            },
+            error: function (response) {
+                console.log(response)
+            }
+        })
+ 
+    }  
+    function delete_data(e){
+        console.log("delete_data")
+        //document.getElementById("mysecondForm").style.display = "block";
+        //document.getElementById("myTbody").style.display = "None";
+        document.getElementById("second_form_id").value = e;
+        console.log(e);
+
+        
+        
+    }  
+    function confirm_delete(){
+        id = document.getElementById("second_form_id").value
+        console.log(id)
+        delete_data = {
+            'id' : id,
+            'data': {
+            'content': 'xxx',
+            'csrfmiddlewaretoken': '{{ csrf_token }}',
+        },
+
+        }
+        $.ajax({
+            type: 'POST',
+            url: '/deleteproduct/',
+            data: {'data': JSON.stringify({'obj': delete_data}) , 'csrfmiddlewaretoken': '{{ csrf_token }}'},
+            success: function (response) {
+                // if not valid user, alert the user
+                console.log(response)
+            },
+            error: function (response) {
+                console.log(response)
+            }
+        })
+
+        
+    }
+</script>
+
+{% endblock %}
+
+

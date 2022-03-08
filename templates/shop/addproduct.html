@@ -1,0 +1,49 @@
+{% extends 'shop/shopindex.html' %}
+{% block content %}
+
+
+    <div class="container w-50 p-5" >
+    <div class="main-body">
+        
+        <div class="row">
+            
+            <form  method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+            <div class="col-lg-8">
+                
+                <div class="card">
+                   
+                    <div class="card-body">
+                        {{form.as_p}}
+                        <div class="row mb-3">
+                        
+                            
+                            <br><br><br><br>
+                           <br>
+                        <div class="row">
+                            
+                            <div class="col-sm-3"></div>
+                            <br>
+                            <br>
+                            <div class="col-sm-9 text-secondary">
+                                <button class="btn btn-primary btn-default" type="submit">Add</button>
+                            </div>
+                            </div>
+                            </div></form>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="card">
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
