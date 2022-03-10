@@ -198,7 +198,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 REGISTRATION_ADMINS = ['pshukla@deqode.com', ]
 ACCOUNT_FORMS = {
     'signup': 'useracc.forms.CustomerSignupForm',
-    'login': 'useracc.forms.UserLoginForm',
+    # 'login': 'useracc.forms.UserLoginForm',
 }
 REGISTRATION_FORM = 'useracc.forms.CustomForm'
 

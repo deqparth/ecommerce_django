@@ -1,5 +1,5 @@
 import json
-
+import datetime
 from django.views import View
 from django.http import JsonResponse
 from django.http import HttpResponse
@@ -9,15 +9,15 @@ from django.views.generic.list import ListView
 from django.views.generic.edit import FormView
 from django.views.generic.edit import UpdateView
 from django.views.generic.detail import DetailView
-from django.views.generic.base import TemplateView
+# from django.views.generic.base import TemplateView
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 
-from .models import User, Product, Wishlist, CartItems, Cart
-from .forms import AddProduct, RequestResponseForm, ShopSignupForm, AddUserForm, AdminUserUpdateForm
+from .models import User, Product, Wishlist, Cart, CartItems, Order, OrderItems, Brand, Category
+from .forms import RequestResponseForm, ShopSignupForm, AddUserForm,  AddProduct
 
 from urllib import request
-
+from django.core.mail import send_mail
 from .filters import ProductFilter
 
 
@@ -79,28 +79,48 @@ class ApprovalView(View):
     template_name = 'requestresponse.html'
 
     @method_decorator([login_required])
-    def get(self, request, *args, **kwargs):
-        # gets called if the request methods is get
-        user_id = self.kwargs['id']
+    def get(self, request, **kwargs):
+        """gets called if the request methods is get"""
+        if request.user.role != "admin":
+            return redirect("/accounts/logout/")
+        user_id = kwargs['id']
         request_by = User.objects.get(id=user_id)
         form = self.form_class()
         return render(request, self.template_name, {'form': form, 'request_by': request_by})
 
     def post(self, request, **kwargs):
+        """gets called if the request methods is post"""
+
         form = self.form_class(request.POST)
         if form.is_valid():
-            approval_response = form.cleaned_data['response']
+            # breakpoint()
+            approval_response = form.cleaned_data['action']
+            message = form.cleaned_data['message']
             user_id = kwargs['id']
             request_by = User.objects.get(id=user_id)
             if approval_response == "approve":
                 request_by.is_active = True
                 request_by.save()
+                send_mail(
+                    'Approval request accepted',
+                    message,
+                    'codetestbyshubham@gmail.com',
+                    [request_by.email],
+                    fail_silently=False,
+                )
 
             elif approval_response == "reject":
-                print("reject called")
+                send_mail(
+                    'Approval request rejected',
+                    message,
+                    'codetestbyshubham@gmail.com',
+                    [request_by.email],
+                    fail_silently=False,
+                )
+
                 request_by.delete()
 
-            return redirect('/requests')
+            return redirect('/')
 
 
 class UserListView(ListView):
@@ -114,11 +134,19 @@ class UserProfileView(DetailView):
     model = User
     template_name = 'customer/profile.html'
 
+    @method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
 
 class ShopProfileView(DetailView):
     # Customer Profile View
     model = User
     template_name = 'shop/profile.html'
+
+    @method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
 
 
 class RequestsView(ListView):
@@ -127,8 +155,15 @@ class RequestsView(ListView):
     template_name = "requestlist.html"
     context_object_name = 'lst'
 
-    def get_queryset(self):
-        # show inactive users as false
+    @method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def get_queryset(self, *args, **kwargs):
+        # Show inactive users as false
+        if self.request.user.role != "admin":
+            return redirect("/accounts/logout")
+
         return User.objects.filter(is_active=False)
 
 
@@ -160,11 +195,13 @@ class AddUserFormView(FormView):
     success_url = "/"
 
     def form_valid(self, form):
-        print(form.cleaned_data)
+        if self.request.user.role != "admin":
+            return redirect("/accounts/logout")
         user = User()
+        print("in")
         user.email = form.cleaned_data['email']
-        user.password = form.cleaned_data['password2']
-        user.set_password(user.password)
+        user.password = form.cleaned_data['password']
+        user.set_password(form.cleaned_data['password'])
         user.role = form.cleaned_data['role']
         user.shopname = form.cleaned_data['shopname']
         user.shopdesc = form.cleaned_data['shopdesc']
@@ -194,11 +231,16 @@ class UserUpdateByAdminView(View):
     model = User
     template_name = "updateuserbyadmin.html"
 
-    def get(self, request, *args, **kwargs):
-        print("user update by admin clalled")
-        user_id = self.kwargs['pk']
+    @method_decorator([login_required])
+    def get(self, request, **kwargs):
+        """Update User information by admin"""
+
+        if request.user.role != 'admin':
+            return redirect("/accounts/logout")
+
+        user_id = kwargs['pk']
         request_by = User.objects.get(id=user_id)
-        responseData = {
+        response_data = {
             'id': request_by.id,
             'full_name': request_by.full_name,
             'email': request_by.email,
@@ -206,31 +248,34 @@ class UserUpdateByAdminView(View):
             'address': request_by.address,
         }
 
-        return JsonResponse(responseData)
+        return JsonResponse(response_data)
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request):
         data = json.loads(request.POST.get('data', ''))
         obj = data['obj']
-        id = obj['id']
+        obj_id = obj['id']
         address = obj['address']
         full_name = obj['full_name']
         role = obj['role']
         email = obj['email']
-        request_by = User.objects.get(id=id)
+        request_by = User.objects.get(id=obj_id)
         request_by.address = address
         request_by.full_name = full_name
         request_by.role = role
         request_by.email = email
         request_by.save()
-        return HttpResponse("okay")
+        return redirect("/")
 
 
 class UserDeleteByAdmin(View):
     def post(self, request):
+        if request.user.role != "admin":
+            return redirect("/accounts/logout")
         data = json.loads(request.POST.get('data', ''))
-        id = data['obj']['id']
-        request_by = User.objects.get(id=id)
+        user_id = data['obj']['id']
+        request_by = User.objects.get(id=user_id)
         request_by.delete()
+        return redirect("/listusers")
 
 
 class ShopUpdateView(UpdateView):
@@ -334,28 +379,43 @@ class ProductUpdateView(View):
 
 class ProductDeleteView(View):
     def post(self, request):
+        if request.user.role != "shopowner":
+            return redirect("/accounts/logout")
         data = json.loads(request.POST.get('data', ''))
-        id = data['obj']['id']
-        print(id)
-        request_by = Product.objects.get(id=id)
+        product_id = data['obj']['id']
+        request_by = Product.objects.get(id=product_id)
         request_by.delete()
+        return redirect("/listproducts/")
 
 
 class ProductListView(ListView):
     template_name = 'shop/productlist.html'
     model = Product
 
+    @method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
     def get_queryset(self, *args, **kwargs):
-        qs = super(ProductListView, self).get_queryset(*args, **kwargs)
+        if self.request.user.role != "shopowner":
+
+            return redirect("/accounts/logout")
+
         products = Product.objects.filter(provider=self.request.user)
-        print(products)
-        # breakpoint()
         return products
 
 
 class ProductDetailView(DetailView):
     model = Product
     template_name = 'customer/productdetail.html'
+
+    def get_context_data(self, **kwargs):
+        """prepares data for the product details"""
+        product = kwargs['object']
+        product.percentsale = product.quantity * product.quantity / 100
+        context = super().get_context_data(**kwargs)
+        context['product'] = product
+        return context
 
 
 class AddProductFormView(FormView):
@@ -384,40 +444,45 @@ class AddProductFormView(FormView):
 class ProductUpdateView(View):
     model = Product
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, **kwargs):
+        """gets called if the request method is get
+        and prefills data"""
+
         if request.user.role != "shopowner":
             return redirect("/accounts/logout")
-        print("product update  clalled")
-        user_id = self.kwargs['pk']
-        request_for = Product.objects.get(id=user_id)
-        responseData = {
+        product_id = self.kwargs['pk']
+        request_for = Product.objects.get(id=product_id)
+        responsedata = {
             'id': request_for.id,
             'name': request_for.name,
             'price': request_for.price,
-            'category': request_for.category,
-            'brand': request_for.brand,
             'description': request_for.description,
             'quantity': request_for.quantity,
             'image': json.dumps(str(request_for.image)),
             'color': request_for.color,
             'material': request_for.material
         }
-        return JsonResponse(responseData)
+        return JsonResponse(responsedata)
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request, **kwargs):
+        """gets called if the request method is post and data is updated"""
         if request.user.role != "shopowner":
             return redirect("/accounts/logout")
         data = request.POST
-        print(request.FILES['image'])
         name = data['name']
-        id = data['id']
+        product_id = kwargs['pk']
         category = data['category']
         quantity = data['quantity']
         color = data['color']
         material = data['material']
         brand = data['brand']
+        price = data['price']
         description = data['description']
-        product = Product.objects.get(id=id)
+        product = Product.objects.get(id=product_id)
+        category = Category(name="Electronics")
+        category.save()
+        brand = Brand(name="Bata")
+        brand.save()
         product.category = category
         product.name = name
         product.quantity = quantity
@@ -425,6 +490,7 @@ class ProductUpdateView(View):
         product.color = color
         product.material = material
         product.brand = brand
+        product.price = price
         product.description = description
         product.save()
         return redirect("/listproducts/")
@@ -438,8 +504,34 @@ class BuyProductView(View):
         return HttpResponse("bought")
 
 
+class BuyNowView(View):
+    def get(self, request, **kwargs):
+        """accepts buy requests and check availability"""
+        if request.user.role != "customer":
+            return redirect("/accounts/logout")
+
+        user = User.objects.get(id=request.user.id)
+        order = Order()
+        order.user = user
+        order.date = datetime.date.today()
+        order.status = "pending"
+        order.total = 0
+        order.save()
+        orderitem = OrderItems()
+        orderitem.order = order
+        orderitem.item = Product.objects.get(id=kwargs['pk'])
+        orderitem.quantity = 1
+        orderitem.provider = Product.objects.get(id=kwargs['pk']).provider
+        orderitem.total = Product.objects.get(id=kwargs['pk']).price
+        orderitem.save()
+        order.total = orderitem.total
+        order.status = "paid"
+        order.save()
+        return redirect("/myorders")
+
+
 class AddToWishlistView(View):
-    def get(self, request):
+    def get(self, request, **kwargs):
         if request.user.role != "customer":
             return redirect("/accounts/logout")
         product_id = self.kwargs['pk']
@@ -458,14 +550,13 @@ class AddToWishlistView(View):
 
 
 class WishListView(View):
-    def get(self, request):
+    def get(self, request, **kwargs):
         if request.user.role != "customer":
             return redirect("/accounts/logout")
         user_id = request.user.id
         user = User.objects.get(id=user_id)
         wishl = user.wishlist
         object_list = wishl.items.all()
-        print(user)
         return render(request, 'customer/mywishlist.html', {'object_list': object_list})
 
 
@@ -484,12 +575,14 @@ class DeleteFromWishListView(View):
 
 class AddToCartView(View):
     def get(self, request, **kwargs):
+        """Adds item to cart"""
         if request.user.role != "customer":
             return redirect("/accounts/logout")
         product = Product.objects.get(id=kwargs['pk'])
         user = User.objects.get(id=request.user.id)
 
         if hasattr(user, 'cart'):
+
             cart = user.cart
             content_list = cart.cartitems_set.all()
             found = False
@@ -506,7 +599,9 @@ class AddToCartView(View):
         else:
             cart = Cart(user=user)
             cart.save()
-            cartitems = CartItems(product, 1, cart)
+            cartitems = CartItems(quantity=1)
+            cartitems.product = product
+            cartitems.cart = cart
             cartitems.save()
         return redirect('/mycart/' + str(user.id))
 
@@ -515,10 +610,13 @@ class CartView(ListView):
     template_name = "customer/mycart.html"
 
     def get_queryset(self):
-        if request.user.role != "customer":
+        """prepares list view for cart items"""
+
+        if self.request.user.role != "customer":
             return redirect("/accounts/logout")
-        # print(self.request.user)
         user = self.request.user
+        if not hasattr(user, 'cart'):
+            return redirect("/")
         object_list = user.cart.cartitems_set.all()
         return object_list
 
@@ -532,3 +630,253 @@ class DeleteFromCartView(View):
         entry = CartItems.objects.get(id=entry_id)
         entry.delete()
         return redirect('/mycart/' + str(request.user.id))
+
+
+class CheckoutView(View):
+    """view for customer to checkout and buy items present in his cart"""
+
+    def get(self, request):
+        """process request for checkout from cart"""
+
+        user = User.objects.get(id=request.user.id)
+        all_items = user.cart.cartitems_set.all()
+        total_price = 0
+        order = Order()
+        order.user = user
+        order.date = datetime.date.today()
+        order.total = 0
+        order.status = "pending"
+        order.save()
+        for item in all_items:
+            product = item.product
+            quantity = item.quantity
+            total = product.price * quantity
+            total_price += total
+            provider = item.product.provider
+            orderitem = OrderItems(
+                order=order, item=product, quantity=quantity, total=total,
+            )
+            orderitem.save()
+            product.save()
+
+        order.total = total_price
+        order.status = "paid"
+        order.save()
+        for items in all_items:
+            items.delete()
+        return redirect("/")
+
+
+class MyOrdersView(ListView):
+    """"list view for all orders by a customer"""
+
+    template_name = "customer/myorders.html"
+    model = Order
+
+    def get_queryset(self):
+        """fetch and prepare data for the view"""
+
+        user = User.objects.get(id=self.request.user.id)
+        order_list = Order.objects.filter(user=user)
+        return order_list
+
+
+class CancelOrderView(View):
+    """cancel a order"""
+
+    def get(self, *args, **kwargs):
+        """change status of order from paid to cancelled"""
+        order = Order.objects.get(id=kwargs['pk'])
+        order.status = "cancelled"
+        order.save()
+        return redirect("/myorders/")
+
+
+class OrderDetailView(DetailView):
+    """renders detail view for order"""
+
+    model = Order
+    template_name = "customer/orderdetail.html"
+
+    def get_context_data(self, **kwargs):
+        """prepares data for the order details"""
+        context = super().get_context_data(**kwargs)
+        order = kwargs['object']
+        item_list = OrderItems.objects.filter(order=order)
+        context['items_list'] = item_list
+        return context
+
+
+class RemoveItemView(View):
+    """remove an item from order"""
+
+    def get(self, *args, **kwargs):
+        """process request for removal of an item"""
+        orderitem = OrderItems.objects.get(id=kwargs['pk'])
+        order_id = str(orderitem.order.id)
+        orderitem.delete()
+        return redirect("/orderdetail/"+order_id)
+
+
+class ShopOrderView(ListView):
+    """fetch orders for a particular shop"""
+
+    template_name = "shop/myorders.html"
+    model = OrderItems
+
+    def get_queryset(self):
+        """fetch and prepare data for the view"""
+        user = User.objects.get(id=self.request.user.id)
+        items_list = OrderItems.objects.filter(item__provider=user)
+        return items_list
+
+
+class ItemStatusUpdateView(View):
+    """Update item status by shop"""
+
+    model = OrderItems
+
+    def get(self, request, **kwargs):
+        """gets called if the request method is get
+        and prefills data"""
+
+        if request.user.role != "shopowner":
+            return redirect("/accounts/logout")
+        order_item = OrderItems.objects.get(id=self.kwargs['pk'])
+        responsedata = {
+            'id': order_item.id,
+            'status': order_item.status,
+        }
+        return JsonResponse(responsedata)
+
+    def post(self, request, **kwargs):
+        """gets called if the request method is post and data is updated"""
+
+        if request.user.role != "shopowner":
+            return redirect("/accounts/logout")
+        data = request.POST
+        order_item_id = kwargs['pk']
+        new_status = data['status']
+        order_item = OrderItems.objects.get(id=order_item_id)
+        order_item.status = new_status
+        order_item.save()
+        return redirect("/listproducts/")
+
+
+class SalesReportView(ListView):
+    """renders sales detail for particular shop"""
+
+    template_name = "shop/salesreport.html"
+    model = Product
+
+    def get(self, request):
+        """Fetches product data for Sales report"""
+
+        user = User.objects.get(id=request.user.id)
+        products = Product.objects.annotate(
+            percentsale=F("quantity") * 100 / F("quantity")
+        ).filter(provider=user)
+        productfilter = SalesFilter(request.GET, queryset=products)
+        productlist = productfilter.qs
+        return render(
+            self.request, self.template_name,
+            {'productlist': productlist, 'salesFilter': productfilter}
+        )
+
+
+class UserOrderView(ListView):
+
+    template_name = "userorders.html"
+    model = Order
+
+    def get(self, request):
+
+        if request.user.role != "admin":
+            return redirect("/accounts/logout")
+
+        orderlist = Order.objects.all()
+        return render(
+            request, self.template_name,
+            {'orderlist': orderlist}
+        )
+
+
+class OrderDetailForAdminView(DetailView):
+    """renders detail view for order"""
+
+    model = Order
+    template_name = "orderdetail.html"
+
+    def get_context_data(self, **kwargs):
+        """prepares data for the order details"""
+        context = super().get_context_data(**kwargs)
+        order = kwargs['object']
+        item_list = OrderItems.objects.filter(order=order)
+        context['items_list'] = item_list
+        return context
+
+
+class ProductDetailForAdminView(DetailView):
+
+    template_name = "productdetail.html"
+    model = Product
+
+    def get_context_data(self, **kwargs):
+        """prepares data for the product details"""
+
+        product = kwargs['object']
+        product.percentsale = product.soldcount * product.quantity / 100
+        context = super().get_context_data(**kwargs)
+        context['product'] = product
+        return context
+
+
+class ShopListView(ListView):
+
+    template_name = "shoplist.html"
+    model = User
+
+    def get(self, request):
+
+        if request.user.role != "admin":
+            return redirect("/accounts/logout")
+
+        shoplist = User.objects.filter(role="shopowner")
+        print(shoplist)
+        return render(
+            request, self.template_name,
+            {'shoplist': shoplist}
+        )
+
+
+class ShopDetailView(DetailView):
+
+    model = User
+    template_name = "shoporderdetail.html"
+
+    def get_context_data(self, **kwargs):
+        """prepares data for the order details"""
+        item_list = OrderItems.objects.filter(provider=kwargs['object'])
+        context = super().get_context_data(**kwargs)
+        context['shop'] = kwargs['object']
+        context['items_list'] = item_list
+        return context
+
+
+class ProductListForAdminView(ListView):
+
+    model = Product
+    template_name = "productlist.html"
+
+    def get(self, request, **kwargs):
+
+        user = User.objects.get(id=kwargs['pk'])
+        productlist = Product.objects.annotate(
+            percentsale=F("soldcount") * 100 / F("quantity")
+        ).filter(provider=user)
+        productfilter = SalesFilter(request.GET, queryset=productlist)
+        productlist = productfilter.qs
+        return render(
+            self.request, self.template_name,
+            {'productlist': productlist, 'salesFilter': productfilter}
+        )
